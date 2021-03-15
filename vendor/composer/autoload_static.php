@@ -7,22 +7,23 @@ namespace Composer\Autoload;
 class ComposerStaticInitd21feac5a58522cc716def3815a7a324
 {
     public static $files = array (
-        '320cde22f66dd4f5d3fd621d3e88b98f' => __DIR__ . '/..' . '/symfony/polyfill-ctype/bootstrap.php',
-        '0e6d7bf4a5811bfa5cf40c5ccd6fae6a' => __DIR__ . '/..' . '/symfony/polyfill-mbstring/bootstrap.php',
-        '0d59ee240a4cd96ddbb4ff164fccea4d' => __DIR__ . '/..' . '/symfony/polyfill-php73/bootstrap.php',
         '3937806105cc8e221b8fa8db5b70d2f2' => __DIR__ . '/..' . '/wp-cli/mustangostang-spyc/includes/functions.php',
         'be01b9b16925dcb22165c40b46681ac6' => __DIR__ . '/..' . '/wp-cli/php-cli-tools/lib/cli/cli.php',
-        '8a0ad02df6a5087f2c380f8fd52db273' => __DIR__ . '/..' . '/wp-cli/cache-command/cache-command.php',
         'f3f0199a3ecd9f501d0a3b361bd2f61c' => __DIR__ . '/..' . '/wp-cli/entity-command/entity-command.php',
         '3f201033d5aceb2293314273be88f7c6' => __DIR__ . '/..' . '/wp-cli/extension-command/extension-command.php',
+        '320cde22f66dd4f5d3fd621d3e88b98f' => __DIR__ . '/..' . '/symfony/polyfill-ctype/bootstrap.php',
+        '0d59ee240a4cd96ddbb4ff164fccea4d' => __DIR__ . '/..' . '/symfony/polyfill-php73/bootstrap.php',
+        '0e6d7bf4a5811bfa5cf40c5ccd6fae6a' => __DIR__ . '/..' . '/symfony/polyfill-mbstring/bootstrap.php',
+        'a4a119a56e50fbb293281d9a48007e0e' => __DIR__ . '/..' . '/symfony/polyfill-php80/bootstrap.php',
         'c65f753375faee349b7adc48c2ee7cc2' => __DIR__ . '/..' . '/wp-cli/db-command/db-command.php',
         'd979c11fe80ba96ae3037b43429fe546' => __DIR__ . '/..' . '/wp-cli/scaffold-command/scaffold-command.php',
         '5c6ec5cff8f9d625772c8ed147f6b894' => __DIR__ . '/..' . '/wp-cli/export-command/export-command.php',
         'b66d29757fcb2fb7a9608d068e3716b0' => __DIR__ . '/..' . '/wp-cli/checksum-command/checksum-command.php',
+        '8a0ad02df6a5087f2c380f8fd52db273' => __DIR__ . '/..' . '/wp-cli/cache-command/cache-command.php',
+        'ac949ce40a981819ba132473518a9a31' => __DIR__ . '/..' . '/wp-cli/wp-config-transformer/src/WPConfigTransformer.php',
         '30cbb6e4122dc988e494c6b9c0438233' => __DIR__ . '/..' . '/wp-cli/import-command/import-command.php',
         '5e099d3cac677dd2bec1003ea7707745' => __DIR__ . '/..' . '/wp-cli/media-command/media-command.php',
         'ba366f96f4fddbdef61ad7a862b44f61' => __DIR__ . '/..' . '/wp-cli/package-command/package-command.php',
-        'ac949ce40a981819ba132473518a9a31' => __DIR__ . '/..' . '/wp-cli/wp-config-transformer/src/WPConfigTransformer.php',
         '5deaf6ce9c8bbdfb65104c7e938d5875' => __DIR__ . '/..' . '/wp-cli/config-command/config-command.php',
         '68c39b88215b6cf7a0da164166670ef9' => __DIR__ . '/..' . '/wp-cli/core-command/core-command.php',
         '7654e00bf0e632580764400bd8293a9c' => __DIR__ . '/..' . '/wp-cli/cron-command/cron-command.php',
@@ -54,6 +55,7 @@ class ComposerStaticInitd21feac5a58522cc716def3815a7a324
         ),
         'S' => 
         array (
+            'Symfony\\Polyfill\\Php80\\' => 23,
             'Symfony\\Polyfill\\Php73\\' => 23,
             'Symfony\\Polyfill\\Mbstring\\' => 26,
             'Symfony\\Polyfill\\Ctype\\' => 23,
@@ -121,6 +123,10 @@ class ComposerStaticInitd21feac5a58522cc716def3815a7a324
         array (
             0 => __DIR__ . '/..' . '/wp-cli/entity-command/src/WP_CLI',
             1 => __DIR__ . '/..' . '/wp-cli/shell-command/src/WP_CLI',
+        ),
+        'Symfony\\Polyfill\\Php80\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/symfony/polyfill-php80',
         ),
         'Symfony\\Polyfill\\Php73\\' => 
         array (
@@ -225,13 +231,13 @@ class ComposerStaticInitd21feac5a58522cc716def3815a7a324
     );
 
     public static $fallbackDirsPsr4 = array (
-        0 => __DIR__ . '/..' . '/wp-cli/cache-command/src',
-        1 => __DIR__ . '/..' . '/wp-cli/checksum-command/src',
-        2 => __DIR__ . '/..' . '/wp-cli/config-command/src',
-        3 => __DIR__ . '/..' . '/wp-cli/core-command/src',
-        4 => __DIR__ . '/..' . '/wp-cli/cron-command/src',
-        5 => __DIR__ . '/..' . '/wp-cli/db-command/src',
-        6 => __DIR__ . '/..' . '/wp-cli/entity-command/src',
+        0 => __DIR__ . '/..' . '/wp-cli/entity-command/src',
+        1 => __DIR__ . '/..' . '/wp-cli/cache-command/src',
+        2 => __DIR__ . '/..' . '/wp-cli/checksum-command/src',
+        3 => __DIR__ . '/..' . '/wp-cli/config-command/src',
+        4 => __DIR__ . '/..' . '/wp-cli/core-command/src',
+        5 => __DIR__ . '/..' . '/wp-cli/cron-command/src',
+        6 => __DIR__ . '/..' . '/wp-cli/db-command/src',
         7 => __DIR__ . '/..' . '/wp-cli/eval-command/src',
         8 => __DIR__ . '/..' . '/wp-cli/export-command/src',
         9 => __DIR__ . '/..' . '/wp-cli/extension-command/src',
@@ -288,7 +294,11 @@ class ComposerStaticInitd21feac5a58522cc716def3815a7a324
     );
 
     public static $classMap = array (
+        'Attribute' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
         'JsonException' => __DIR__ . '/..' . '/symfony/polyfill-php73/Resources/stubs/JsonException.php',
+        'Stringable' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/Stringable.php',
+        'UnhandledMatchError' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/UnhandledMatchError.php',
+        'ValueError' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/ValueError.php',
     );
 
     public static function getInitializer(ClassLoader $loader)

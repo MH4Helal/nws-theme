@@ -17,13 +17,16 @@ final class PhpCodeExtractor extends PhpCode {
 			'__'              => 'text_domain',
 			'esc_attr__'      => 'text_domain',
 			'esc_html__'      => 'text_domain',
+			'esc_xml__'       => 'text_domain',
 			'_e'              => 'text_domain',
 			'esc_attr_e'      => 'text_domain',
 			'esc_html_e'      => 'text_domain',
+			'esc_xml_e'       => 'text_domain',
 			'_x'              => 'text_context_domain',
 			'_ex'             => 'text_context_domain',
 			'esc_attr_x'      => 'text_context_domain',
 			'esc_html_x'      => 'text_context_domain',
+			'esc_xml_x'       => 'text_context_domain',
 			'_n'              => 'single_plural_number_domain',
 			'_nx'             => 'single_plural_number_context_domain',
 			'_n_noop'         => 'single_plural_domain',
@@ -46,7 +49,7 @@ final class PhpCodeExtractor extends PhpCode {
 	 * {@inheritdoc}
 	 */
 	public static function fromString( $string, Translations $translations, array $options = [] ) {
-		WP_CLI::debug( "Parsing file {$options['file']}" );
+		WP_CLI::debug( "Parsing file {$options['file']}", 'make-pot' );
 
 		try {
 			static::fromStringMultiple( $string, [ $translations ], $options );
@@ -56,7 +59,8 @@ final class PhpCodeExtractor extends PhpCode {
 					'Could not parse file %1$s: %2$s',
 					$options['file'],
 					$exception->getMessage()
-				)
+				),
+				'make-pot'
 			);
 		}
 	}

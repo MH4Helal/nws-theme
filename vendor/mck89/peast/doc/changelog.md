@@ -1,6 +1,26 @@
 Changelog
 ==========
 
+#### 1.12.0
+* Added options array to Traverser constructor and shortcut method on nodes
+* Added Query class
+
+#### 1.11.0
+* Implemented ES2021 parser with logical assignment operators and numeric separators
+
+#### 1.10.4
+* Implemented parsing of coalescing operator
+* Implemented parsing of optional chaining
+* Fixed bug when parsing a semicolon on a new line after break and continue statements
+
+#### 1.10.3
+* Implemented parsing of `import.meta` syntax
+* Implemented parsing of BigIntLiteral as objects keys
+
+#### 1.10.2
+* Implemented parsing of `export * as ns from "source"` syntax
+* Fixed Renderer so that it won't trust computed flag in MemberExpression if property is not an Identifier
+
 #### 1.10.1
 * Fixed parsing of semicolon after do-while statement
 

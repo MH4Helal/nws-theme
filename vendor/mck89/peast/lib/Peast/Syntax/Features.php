@@ -94,4 +94,46 @@ class Features
      * @var bool
      */
     public $bigInt = false;
+
+    /**
+     * Exported name for export all declarations
+     *
+     * @var bool
+     */
+    public $exportedNameInExportAll = false;
+
+    /**
+     * Import.meta
+     *
+     * @var bool
+     */
+    public $importMeta = false;
+
+    /**
+     * Coalescing operator
+     *
+     * @var bool
+     */
+    public $coalescingOperator = false;
+
+    /**
+     * Optional chaining
+     *
+     * @var bool
+     */
+    public $optionalChaining = false;
+
+    /**
+     * Logical assignment operators
+     *
+     * @var bool
+     */
+    public $logicalAssignmentOperators = false;
+
+    /**
+     * Numeric literal separator
+     *
+     * @var bool
+     */
+    public $numericLiteralSeparator = false;
 }

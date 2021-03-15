@@ -1,12 +1,12 @@
 # Global parameter defaults
 path: http
-url: http://local.wp
+url: http://careers.nws.co.uk
 user: admin
 color: false
 
 # Subcommand defaults (e.g. `wp config create`)
 config create:
-    dbhost: localhost
+    dbhost: 127.0.0.1
     dbname: wordpress-dev
     dbuser: root
     dbpass: root
@@ -15,7 +15,7 @@ config create:
         define( 'WP_MEMORY_LIMIT', '256M' );
 
 core install:
-    title: Sample Title
+    title: Careers | Net World Sports
     admin_user: admin
     admin_password: password
     admin_email: admin@example.com

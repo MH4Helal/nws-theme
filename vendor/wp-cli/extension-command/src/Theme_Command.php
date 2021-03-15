@@ -469,8 +469,8 @@ class Theme_Command extends \WP_CLI\CommandWithUpgrade {
 				'name'           => $key,
 				'status'         => $this->get_status( $theme ),
 				'update'         => (bool) $update_info,
-				'update_version' => $update_info['new_version'],
-				'update_package' => $update_info['package'],
+				'update_version' => isset( $update_info['new_version'] ) ? $update_info['new_version'] : null,
+				'update_package' => isset( $update_info['package'] ) ? $update_info['package'] : null,
 				'version'        => $theme->get( 'Version' ),
 				'update_id'      => $theme->get_stylesheet(),
 				'title'          => $theme->get( 'Name' ),
@@ -601,7 +601,7 @@ class Theme_Command extends \WP_CLI\CommandWithUpgrade {
 			WP_CLI::error( $message );
 		}
 
-		// WP_Theme object employs magic getter, unfortunately
+		// WP_Theme object employs magic getter, unfortunately.
 		$theme_vars = [
 			'name',
 			'title',
@@ -721,6 +721,10 @@ class Theme_Command extends \WP_CLI\CommandWithUpgrade {
 			return;
 		}
 
+		if ( isset( $assoc_args['version'] ) && isset( $assoc_args['dry-run'] ) ) {
+			WP_CLI::error( '--dry-run cannot be used together with --version.' );
+		}
+
 		if ( isset( $assoc_args['version'] ) ) {
 			foreach ( $this->fetcher->get_many( $args ) as $theme ) {
 				$r = delete_theme( $theme->stylesheet );
@@ -835,8 +839,10 @@ class Theme_Command extends \WP_CLI\CommandWithUpgrade {
 			$theme_slug = $theme->get_stylesheet();
 
 			if ( $this->is_active_theme( $theme ) && ! $force ) {
-				WP_CLI::warning( "Can't delete the currently active theme: $theme_slug" );
-				$errors++;
+				if ( ! $all ) {
+					WP_CLI::warning( "Can't delete the currently active theme: $theme_slug" );
+					$errors++;
+				}
 				continue;
 			}
 
@@ -879,6 +885,15 @@ class Theme_Command extends \WP_CLI\CommandWithUpgrade {
 	 *   - json
 	 *   - count
 	 *   - yaml
+	 * ---
+	 *
+	 * [--status=<status>]
+	 * : Filter the output by theme status.
+	 * ---
+	 * options:
+	 *   - active
+	 *   - parent
+	 *   - inactive
 	 * ---
 	 *
 	 * ## AVAILABLE FIELDS

@@ -65,6 +65,7 @@ Available methods are:
 * ```Peast::ES2018(source, options)``` or ```Peast::ES9(source, options)```: parse using EcmaScript 2018 (ES9) syntax
 * ```Peast::ES2019(source, options)``` or ```Peast::ES10(source, options)```: parse using EcmaScript 2019 (ES10) syntax
 * ```Peast::ES2020(source, options)``` or ```Peast::ES11(source, options)```: parse using EcmaScript 2020 (ES11) syntax
+* ```Peast::ES2021(source, options)``` or ```Peast::ES12(source, options)```: parse using EcmaScript 2021 (ES12) syntax
 * ```Peast::latest(source, options)```: parse using the latest EcmaScript syntax version implemented
 
 Options
@@ -76,7 +77,7 @@ In the examples above you may have noticed the `$options` parameter. This parame
     * `Peast\Peast::SOURCE_TYPE_MODULE`: this indicates that the code is a module and it activates the parsing of `import` and `export` keywords
 * "comments" (from version 1.5): enables comments parsing and attaches the comments to the nodes in the tree. You can get comments attached to nodes using `getLeadingComments` and `getTrailingComments` methods.
 * "jsx" (from version 1.8): enables parsing of JSX syntax.
-* "sourceEncoding": to specify the encoding of the code to parse, if not spcified the parser will assume UTF-8.
+* "sourceEncoding": to specify the encoding of the code to parse, if not specified the parser will assume UTF-8.
 * "strictEncoding": if false the parser will handle invalid UTF8 characters in the source code by replacing them with the character defined in the "mbstring.substitute_character" ini setting, otherwise it will throw an exception. (available from version 1.9.4)
 
 Differences from ESTree

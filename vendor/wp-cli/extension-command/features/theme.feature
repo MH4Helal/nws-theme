@@ -386,6 +386,16 @@ Feature: Manage WordPress themes
       twentytwelve,inactive,1.0,{UPDATE_VERSION}
       """
 
+  Scenario: When updating a theme --dry-run cannot be used when specifying a specific version.
+    Given a WP install
+
+    When I try `wp theme update --all --version=whatever --dry-run`
+    Then STDERR should be:
+      """
+      Error: --dry-run cannot be used together with --version.
+      """
+    And the return code should be 1
+
   Scenario: Check json and csv formats when updating a theme
     Given a WP install
 
@@ -585,3 +595,19 @@ Feature: Manage WordPress themes
       """
     And STDOUT should be empty
     And the return code should be 1
+
+  Scenario: Only valid status filters are accepted when listing themes
+    Given a WP install
+
+    When I run `wp theme list`
+    Then STDERR should be empty
+
+    When I run `wp theme list --status=active`
+    Then STDERR should be empty
+
+    When I try `wp theme list --status=invalid-status`
+    Then STDERR should be:
+      """
+      Error: Parameter errors:
+       Invalid value specified for 'status' (Filter the output by theme status.)
+      """

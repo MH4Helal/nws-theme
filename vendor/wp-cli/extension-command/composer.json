@@ -9,10 +9,15 @@
             "name": "Daniel Bachhuber",
             "email": "daniel@runcommand.io",
             "homepage": "https://runcommand.io"
+        },
+        {
+            "name": "Alain Schlesser",
+            "email": "alain.schlesser@gmail.com",
+            "homepage": "https://www.alainschlesser.com"
         }
     ],
     "require": {
-        "composer/semver": "^1.4",
+        "composer/semver": "^1.4 || ^2.0",
         "wp-cli/wp-cli": "^2"
     },
     "require-dev": {

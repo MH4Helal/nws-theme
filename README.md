@@ -1,8 +1,8 @@
 # Requirements
 
-- node version ^12.4.0
-- npm version ^6.9.0
-- composer ^1.5.5
+- node version 12.4.0
+- npm version 6.9.0
+- composer 1.5.5
 
 # Pre Install
 

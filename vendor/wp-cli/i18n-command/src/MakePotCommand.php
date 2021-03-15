@@ -6,7 +6,6 @@ use Gettext\Extractors\Po;
 use Gettext\Merge;
 use Gettext\Translation;
 use Gettext\Translations;
-use Symfony\Component\Finder\SplFileInfo;
 use WP_CLI;
 use WP_CLI_Command;
 use WP_CLI\Utils;
@@ -58,6 +57,16 @@ class MakePotCommand extends WP_CLI_Command {
 	 * @var bool
 	 */
 	protected $skip_js = false;
+
+	/**
+	 * @var bool
+	 */
+	protected $skip_php = false;
+
+	/**
+	 * @var bool
+	 */
+	protected $skip_block_json = false;
 
 	/**
 	 * @var bool
@@ -190,6 +199,12 @@ class MakePotCommand extends WP_CLI_Command {
 	 * [--skip-js]
 	 * : Skips JavaScript string extraction. Useful when this is done in another build step, e.g. through Babel.
 	 *
+	 * [--skip-php]
+	 * : Skips PHP string extraction.
+	 *
+	 * [--skip-block-json]
+	 * : Skips string extraction from block.json files.
+	 *
 	 * [--skip-audit]
 	 * : Skips string audit where it tries to find possible mistakes in translatable strings. Useful when running in an
 	 * automated environment.
@@ -264,13 +279,15 @@ class MakePotCommand extends WP_CLI_Command {
 		$array_arguments = array( 'headers' );
 		$assoc_args      = Utils\parse_shell_arrays( $assoc_args, $array_arguments );
 
-		$this->source       = realpath( $args[0] );
-		$this->slug         = Utils\get_flag_value( $assoc_args, 'slug', Utils\basename( $this->source ) );
-		$this->skip_js      = Utils\get_flag_value( $assoc_args, 'skip-js', $this->skip_js );
-		$this->skip_audit   = Utils\get_flag_value( $assoc_args, 'skip-audit', $this->skip_audit );
-		$this->headers      = Utils\get_flag_value( $assoc_args, 'headers', $this->headers );
-		$this->file_comment = Utils\get_flag_value( $assoc_args, 'file-comment' );
-		$this->package_name = Utils\get_flag_value( $assoc_args, 'package-name' );
+		$this->source          = realpath( $args[0] );
+		$this->slug            = Utils\get_flag_value( $assoc_args, 'slug', Utils\basename( $this->source ) );
+		$this->skip_js         = Utils\get_flag_value( $assoc_args, 'skip-js', $this->skip_js );
+		$this->skip_php        = Utils\get_flag_value( $assoc_args, 'skip-php', $this->skip_php );
+		$this->skip_block_json = Utils\get_flag_value( $assoc_args, 'skip-block-json', $this->skip_block_json );
+		$this->skip_audit      = Utils\get_flag_value( $assoc_args, 'skip-audit', $this->skip_audit );
+		$this->headers         = Utils\get_flag_value( $assoc_args, 'headers', $this->headers );
+		$this->file_comment    = Utils\get_flag_value( $assoc_args, 'file-comment' );
+		$this->package_name    = Utils\get_flag_value( $assoc_args, 'package-name' );
 
 		$ignore_domain = Utils\get_flag_value( $assoc_args, 'ignore-domain', false );
 
@@ -488,6 +505,7 @@ class MakePotCommand extends WP_CLI_Command {
 					'Author',
 					'Author URI',
 					'Version',
+					'License',
 					'Domain Path',
 					'Text Domain',
 				];
@@ -559,14 +577,16 @@ class MakePotCommand extends WP_CLI_Command {
 		}
 
 		try {
-			$options = [
-				// Extract 'Template Name' headers in theme files.
-				'wpExtractTemplates' => isset( $this->main_file_data['Theme Name'] ),
-				'include'            => $this->include,
-				'exclude'            => $this->exclude,
-				'extensions'         => [ 'php' ],
-			];
-			PhpCodeExtractor::fromDirectory( $this->source, $translations, $options );
+			if ( ! $this->skip_php ) {
+				$options = [
+					// Extract 'Template Name' headers in theme files.
+					'wpExtractTemplates' => isset( $this->main_file_data['Theme Name'] ),
+					'include'            => $this->include,
+					'exclude'            => $this->exclude,
+					'extensions'         => [ 'php' ],
+				];
+				PhpCodeExtractor::fromDirectory( $this->source, $translations, $options );
+			}
 
 			if ( ! $this->skip_js ) {
 				JsCodeExtractor::fromDirectory(
@@ -586,6 +606,20 @@ class MakePotCommand extends WP_CLI_Command {
 						'include'    => $this->include,
 						'exclude'    => $this->exclude,
 						'extensions' => [ 'map' ],
+					]
+				);
+			}
+
+			if ( ! $this->skip_block_json ) {
+				BlockExtractor::fromDirectory(
+					$this->source,
+					$translations,
+					[
+						// Only look for block.json files, nothing else.
+						'restrictFileNames' => [ 'block.json' ],
+						'include'           => $this->include,
+						'exclude'           => $this->exclude,
+						'extensions'        => [ 'json' ],
 					]
 				);
 			}
@@ -758,7 +792,7 @@ class MakePotCommand extends WP_CLI_Command {
 		}
 
 		if ( isset( $this->main_file_data['Plugin Name'] ) ) {
-			if ( isset( $this->main_file_data['License'] ) ) {
+			if ( isset( $this->main_file_data['License'] ) && ! empty( $this->main_file_data['License'] ) ) {
 				return sprintf(
 					"Copyright (C) %1\$s %2\$s\nThis file is distributed under the %3\$s.",
 					date( 'Y' ), // phpcs:ignore WordPress.DateTime.RestrictedFunctions.date_date

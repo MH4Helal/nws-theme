@@ -14,7 +14,7 @@ namespace Peast\Syntax;
  * 
  * @author Marco Marchiò <marco.mm89@gmail.com>
  */
-class Parser extends \Peast\Syntax\ParserAbstract
+class Parser extends ParserAbstract
 {
     use JSX\Parser;
     
@@ -78,7 +78,7 @@ class Parser extends \Peast\Syntax\ParserAbstract
      */
     protected $assignmentOperators = array(
         "=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=", ">>>=", "&=", "^=",
-        "|=", "**="
+        "|=", "**=", "&&=", "||=", "??="
     );
     
     /**
@@ -87,6 +87,7 @@ class Parser extends \Peast\Syntax\ParserAbstract
      * @var array 
      */
     protected $logicalBinaryOperators = array(
+        "??" => 0,
         "||" => 0,
         "&&" => 1,
         "|" => 2,
@@ -164,6 +165,23 @@ class Parser extends \Peast\Syntax\ParserAbstract
                 "**="
             );
             unset($this->logicalBinaryOperators["**"]);
+        }
+
+        //Remove coalescing operator if the feature
+        //is not enabled
+        if (!$this->features->coalescingOperator) {
+            unset($this->logicalBinaryOperators["??"]);
+        }
+
+        //Remove logical assignment operators if the
+        //feature is not enabled
+        if (!$this->features->logicalAssignmentOperators) {
+            foreach (array("&&=", "||=", "??=") as $op) {
+                Utils::removeArrayValue(
+                    $this->assignmentOperators,
+                    $op
+                );
+            }
         }
     }
     
@@ -639,13 +657,14 @@ class Parser extends \Peast\Syntax\ParserAbstract
             
             $node = $this->createNode("ContinueStatement", $token);
             
-            if ($this->scanner->noLineTerminators()) {
-                if ($label = $this->parseIdentifier(static::$labelledIdentifier)) {
-                    $node->setLabel($label);
-                }
+            if ($this->scanner->noLineTerminators() &&
+                ($label = $this->parseIdentifier(static::$labelledIdentifier))
+            ) {
+                $node->setLabel($label);
+                $this->assertEndOfStatement();
+            } else {
+                $this->scanner->consume(";");
             }
-            
-            $this->assertEndOfStatement();
             
             return $this->completeNode($node);
         }
@@ -663,13 +682,13 @@ class Parser extends \Peast\Syntax\ParserAbstract
             
             $node = $this->createNode("BreakStatement", $token);
             
-            if ($this->scanner->noLineTerminators()) {
-                if ($label = $this->parseIdentifier(static::$labelledIdentifier)) {
-                    $node->setLabel($label);
-                }
+            if ($this->scanner->noLineTerminators() &&
+                ($label = $this->parseIdentifier(static::$labelledIdentifier))) {
+                $node->setLabel($label);
+                $this->assertEndOfStatement();
+            } else {
+                $this->scanner->consume(";");
             }
-            
-            $this->assertEndOfStatement();
             
             return $this->completeNode($node);
         }
@@ -1260,6 +1279,13 @@ class Parser extends \Peast\Syntax\ParserAbstract
             $this->scanner->setState($state);
             $notBeforeLet = !$this->scanner->isBefore(array("let"));
             $left = $this->parseLeftHandSideExpression();
+
+            if ($left && $left->getType() === "ChainExpression") {
+                return $this->error(
+                    "Optional chain can't appear in left-hand side"
+                );
+            }
+
             $left = $this->expressionToPattern($left);
             
             if ($notBeforeSB && $left && $this->scanner->consume("in")) {
@@ -1947,11 +1973,21 @@ class Parser extends \Peast\Syntax\ParserAbstract
         if ($token = $this->scanner->consume("export")) {
             
             if ($this->scanner->consume("*")) {
+
+                $exported = null;
+                if ($this->features->exportedNameInExportAll &&
+                    $this->scanner->consume("as")) {
+                    $exported = $this->parseIdentifier(static::$identifierName);
+                    if (!$exported) {
+                        return $this->error();
+                    }
+                }
                 
                 if ($source = $this->parseFromClause()) {
                     $this->assertEndOfStatement();
                     $node = $this->createNode("ExportAllDeclaration", $token);
                     $node->setSource($source);
+                    $node->setExported($exported);
                     return $this->completeNode($node);
                 }
                 
@@ -2088,6 +2124,12 @@ class Parser extends \Peast\Syntax\ParserAbstract
         //by the relative method
         if ($this->features->dynamicImport &&
             $this->scanner->isBefore(array(array("import", "(")), true)) {
+            return null;
+        }
+        //Delay parsing of import.meta so that it is handled
+        //by the relative method
+        if ($this->features->importMeta &&
+            $this->scanner->isBefore(array(array("import", ".")), true)) {
             return null;
         }
         if ($token = $this->scanner->consume("import")) {
@@ -2886,7 +2928,13 @@ class Parser extends \Peast\Syntax\ParserAbstract
                 
                 $operators = $this->assignmentOperators;
                 if ($operator = $this->scanner->consumeOneOf($operators)) {
-                    
+
+                    if ($expr->getType() === "ChainExpression") {
+                        return $this->error(
+                            "Optional chain can't appear in left-hand side"
+                        );
+                    }
+
                     $right = $this->parseAssignmentExpression();
                     
                     if ($right) {
@@ -2956,11 +3004,25 @@ class Parser extends \Peast\Syntax\ParserAbstract
         }
         
         $list = array($exp);
+        $coalescingFound = $andOrFound = false;
         while ($token = $this->scanner->consumeOneOf(array_keys($operators))) {
+            $op = $token->getValue();
+            // Coalescing and logical expressions can't be used together
+            if ($op === "??") {
+                $coalescingFound = true;
+            } elseif ($op === "&&" || $op === "||") {
+                $andOrFound = true;
+            }
+            if ($coalescingFound && $andOrFound) {
+                return $this->error(
+                    "Logical expressions must be wrapped in parentheses when " .
+                    "inside coalesce expressions"
+                );
+            }
             if (!($exp = $this->parseUnaryExpression())) {
                 return $this->error();
             }
-            $list[] = $token->getValue();
+            $list[] = $op;
             $list[] = $exp;
         }
         
@@ -2969,7 +3031,16 @@ class Parser extends \Peast\Syntax\ParserAbstract
             $maxGrade = max($operators);
             for ($grade = $maxGrade; $grade >= 0; $grade--) {
                 $class = $grade < 2 ? "LogicalExpression" : "BinaryExpression";
-                for ($i = 1; $i < $len; $i += 2) {
+                $r2l = $grade === 10;
+                //Exponentation operator must be parsed right to left
+                if ($r2l) {
+                    $i = $len - 2;
+                    $step = -2;
+                } else {
+                    $i = 1;
+                    $step = 2;
+                }
+                for (; ($r2l && $i > 0) || (!$r2l && $i < $len); $i += $step) {
                     if ($operators[$list[$i]] === $grade) {
                         $node = $this->createNode($class, $list[$i - 1]);
                         $node->setLeft($list[$i - 1]);
@@ -2979,7 +3050,9 @@ class Parser extends \Peast\Syntax\ParserAbstract
                             $node, $list[$i + 1]->getLocation()->getEnd()
                         );
                         array_splice($list, $i - 1, 3, array($node));
-                        $i -= 2;
+                        if (!$r2l) {
+                            $i -= $step;
+                        }
                         $len = count($list);
                     }
                 }
@@ -3020,6 +3093,11 @@ class Parser extends \Peast\Syntax\ParserAbstract
                     $node = $this->createNode("AwaitExpression", $token);
                 } else {
                     if ($op === "++" || $op === "--") {
+                        if ($argument->getType() === "ChainExpression") {
+                            return $this->error(
+                                "Optional chain can't appear in left-hand side"
+                            );
+                        }
                         $node = $this->createNode("UpdateExpression", $token);
                         $node->setPrefix(true);
                     } else {
@@ -3044,10 +3122,16 @@ class Parser extends \Peast\Syntax\ParserAbstract
     protected function parsePostfixExpression()
     {
         if ($argument = $this->parseLeftHandSideExpression()) {
-            
+
             if ($this->scanner->noLineTerminators() &&
                 $token = $this->scanner->consumeOneOf($this->postfixOperators)
             ) {
+
+                if ($argument->getType() === "ChainExpression") {
+                    return $this->error(
+                        "Optional chain can't appear in left-hand side"
+                    );
+                }
                 
                 $node = $this->createNode("UpdateExpression", $argument);
                 $node->setOperator($token->getValue());
@@ -3070,25 +3154,36 @@ class Parser extends \Peast\Syntax\ParserAbstract
         $object = null;
         $newTokens = array();
         
-        //Parse all occurences of "new"
+        //Parse all occurrences of "new"
         if ($newToken = $this->scanner->isBefore(array("new"))) {
             while ($newToken = $this->scanner->consume("new")) {
                 if ($this->scanner->consume(".")) {
                     //new.target
-                    if ($this->scanner->consume("target")) {
-                    
-                        $node = $this->createNode("MetaProperty", $newToken);
-                        $node->setMeta("new");
-                        $node->setProperty("target");
-                        $object = $this->completeNode($node);
-                        break;
-                    
-                    } else {
+                    if (!$this->scanner->consume("target")) {
                         return $this->error();
                     }
+                    $node = $this->createNode("MetaProperty", $newToken);
+                    $node->setMeta("new");
+                    $node->setProperty("target");
+                    $object = $this->completeNode($node);
+                    break;
                 }
                 $newTokens[] = $newToken;
             }
+        } elseif ($this->features->importMeta &&
+            $this->sourceType === \Peast\Peast::SOURCE_TYPE_MODULE &&
+            $this->scanner->isBefore(array(array("import", ".")), true)
+        ) {
+            //import.meta
+            $importToken = $this->scanner->consume("import");
+            $this->scanner->consume(".");
+            if (!$this->scanner->consume("meta")) {
+                return $this->error();
+            }
+            $node = $this->createNode("MetaProperty", $importToken);
+            $node->setMeta("import");
+            $node->setProperty("meta");
+            $object = $this->completeNode($node);
         }
         
         $newTokensCount = count($newTokens);
@@ -3108,43 +3203,66 @@ class Parser extends \Peast\Syntax\ParserAbstract
         }
         
         $valid = true;
+        $optionalChain = false;
         $properties = array();
         while (true) {
-            if ($this->scanner->consume(".")) {
+            $optional = false;
+            if ($opToken = $this->scanner->consumeOneOf(array("?.", "."))) {
+                $isOptChain = $opToken->getValue() == "?.";
+                if ($isOptChain) {
+                    $optionalChain = $optional = true;
+                }
                 if ($property = $this->parseIdentifier(static::$identifierName)) {
+                    $valid = true;
                     $properties[] = array(
                         "type"=> "id",
-                        "info" => $property
+                        "info" => $property,
+                        "optional" => $optional
                     );
+                    continue;
                 } else {
                     $valid = false;
-                    break;
+                    if (!$isOptChain) {
+                        break;
+                    }
                 }
-            } elseif ($this->scanner->consume("[")) {
+            }
+            if ($this->scanner->consume("[")) {
                 if (($property = $this->isolateContext(
                         array("allowIn" => true), "parseExpression"
                     )) &&
                     $this->scanner->consume("]")
                 ) {
+                    $valid = true;
                     $properties[] = array(
                         "type" => "computed",
                         "info" => array(
                             $property, $this->scanner->getPosition()
-                        )
+                        ),
+                        "optional" => $optional
                     );
                 } else {
                     $valid = false;
                     break;
                 }
             } elseif ($property = $this->parseTemplateLiteral(true)) {
+                if ($optionalChain) {
+                    return $this->error(
+                        "Optional chain can't appear in tagged template expressions"
+                    );
+                }
+                $valid = true;
                 $properties[] = array(
                     "type"=> "template",
-                    "info" => $property
+                    "info" => $property,
+                    "optional" => $optional
                 );
             } elseif (($args = $this->parseArguments()) !== null) {
+                $valid = true;
                 $properties[] = array(
                     "type"=> "args",
-                    "info" => array($args, $this->scanner->getPosition())
+                    "info" => array($args, $this->scanner->getPosition()),
+                    "optional" => $optional
                 );
             } else {
                 break;
@@ -3161,16 +3279,26 @@ class Parser extends \Peast\Syntax\ParserAbstract
         
         $node = null;
         $endPos = $object->getLocation()->getEnd();
+        $optionalChainStarted = false;
         foreach ($properties as $i => $property) {
             $lastNode = $node ? $node : $object;
+            if ($property["optional"]) {
+                $optionalChainStarted = true;
+            }
             if ($property["type"] === "args") {
                 if ($newTokensCount) {
+                    if ($optionalChainStarted && $newTokensCount) {
+                        return $this->error(
+                            "Optional chain can't appear in new expressions"
+                        );
+                    }
                     $node = $this->createNode(
                         "NewExpression", array_pop($newTokens)
                     );
                     $newTokensCount--;
                 } else {
                     $node = $this->createNode("CallExpression", $lastNode);
+                    $node->setOptional($property["optional"]);
                 }
                 $node->setCallee($lastNode);
                 $node->setArguments($property["info"][0]);
@@ -3178,12 +3306,14 @@ class Parser extends \Peast\Syntax\ParserAbstract
             } elseif ($property["type"] === "id") {
                 $node = $this->createNode("MemberExpression", $lastNode);
                 $node->setObject($lastNode);
+                $node->setOptional($property["optional"]);
                 $node->setProperty($property["info"]);
                 $endPos = $property["info"]->getLocation()->getEnd();
             } elseif ($property["type"] === "computed") {
                 $node = $this->createNode("MemberExpression", $lastNode);
                 $node->setObject($lastNode);
                 $node->setProperty($property["info"][0]);
+                $node->setOptional($property["optional"]);
                 $node->setComputed(true);
                 $endPos = $property["info"][1];
             } elseif ($property["type"] === "template") {
@@ -3203,6 +3333,14 @@ class Parser extends \Peast\Syntax\ParserAbstract
                 $node->setCallee($lastNode);
                 $node = $this->completeNode($node);
             }
+        }
+
+        //Wrap the result in a chain expression if required
+        if ($optionalChain) {
+            $prevNode = $node;
+            $node = $this->createNode("ChainExpression", $prevNode);
+            $node->setExpression($prevNode);
+            $node = $this->completeNode($node);
         }
         
         return $node;
@@ -3509,8 +3647,6 @@ class Parser extends \Peast\Syntax\ParserAbstract
                 return $literal;
             } elseif ($literal = $this->parseNumericLiteral()) {
                 return $literal;
-            } elseif ($literal = $this->parseBigIntLiteral()) {
-                return $literal;
             }
         }
         return null;
@@ -3538,7 +3674,7 @@ class Parser extends \Peast\Syntax\ParserAbstract
     /**
      * Parses a numeric literal
      * 
-     * @return Node\NumericLiteral|null
+     * @return Node\NumericLiteral|Node\BigIntLiteral|null
      */
     protected function parseNumericLiteral()
     {
@@ -3550,20 +3686,9 @@ class Parser extends \Peast\Syntax\ParserAbstract
             $node = $this->createNode("NumericLiteral", $token);
             $node->setRaw($val);
             return $this->completeNode($node);
-        }
-        return null;
-    }
-    
-    /**
-     * Parses a BigInt literal
-     * 
-     * @return Node\BigInt|null
-     */
-    protected function parseBigIntLiteral()
-    {
-        $token = $this->scanner->getToken();
-        if ($token && $token->getType() === Token::TYPE_BIGINT_LITERAL) {
+        } elseif ($token && $token->getType() === Token::TYPE_BIGINT_LITERAL) {
             $val = $token->getValue();
+            $this->checkInvalidEscapeSequences($val, true);
             $this->scanner->consumeToken();
             $node = $this->createNode("BigIntLiteral", $token);
             $node->setRaw($val);
@@ -3725,10 +3850,19 @@ class Parser extends \Peast\Syntax\ParserAbstract
         }
         $checkLegacyOctal = $forceLegacyOctalCheck || $this->scanner->getStrictMode();
         if ($number) {
-            if ($checkLegacyOctal && preg_match("#^0[0-7]+$#", $val)) {
-                return $this->error(
-                    "Octal literals are not allowed in strict mode"
-                );
+            if ($val && $val[0] === "0" && preg_match("#^0[0-7_]+$#", $val)) {
+                if ($checkLegacyOctal) {
+                    return $this->error(
+                        "Octal literals are not allowed in strict mode"
+                    );
+                }
+                if ($this->features->numericLiteralSeparator &&
+                    strpos($val, '_') !== false
+                ) {
+                    return $this->error(
+                        "Numeric separators are not allowed in legacy octal numbers"
+                    );
+                }
             }
         } elseif (strpos($val, "\\") !== false) {
             $hex = "0-9a-fA-F";
