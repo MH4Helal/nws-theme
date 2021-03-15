@@ -32,7 +32,7 @@
             /**
              *  The Shortcode for Contact Form 7
              */
-            echo do_shortcode('[contact-form-7 id="168" title="Contact Us"]');
+            echo do_shortcode('[contact-form-7 id="41" title="Contact Us"]');
 
 
             ?>
