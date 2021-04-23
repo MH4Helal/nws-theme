@@ -9,13 +9,13 @@ config create:
     dbhost: localhost
     dbname: wordpress-nws-2019
     dbuser: root
-    dbpass: root
+    dbpass: password
     extra-php: |
         define( 'WP_DEBUG', true );
         define( 'WP_MEMORY_LIMIT', '256M' );
 
 core install:
-    title: Blog | Net World Sports
+    title: Careers | Net World Sports
     admin_user: admin
     admin_password: password
     admin_email: admin@example.com
